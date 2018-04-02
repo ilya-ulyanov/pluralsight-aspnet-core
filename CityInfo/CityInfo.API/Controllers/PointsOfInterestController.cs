@@ -20,5 +20,23 @@ namespace CityInfo.API.Controllers
 
             return this.Ok(city.PointsOfInterest);
         }
+
+        [HttpGet("{cityId}/pointsOfInterest/{pointOfInterestId}")]
+        public IActionResult GetPointOfInterest(int cityId, int pointOfInterestId)
+        {
+            var city = CitiesDataStore.Current.Cities.SingleOrDefault(c => c.Id == cityId);
+            if (city == null)
+            {
+                return this.NotFound();
+            }
+
+            var poi = city.PointsOfInterest.SingleOrDefault(p => p.Id == pointOfInterestId);
+            if (poi == null)
+            {
+                return this.NotFound();
+            }
+
+            return this.Ok(poi);
+        }
     }
 }
