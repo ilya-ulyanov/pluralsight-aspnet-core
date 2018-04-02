@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using CityInfo.API.Models;
+using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,6 +10,8 @@ namespace CityInfo.API.Controllers
     [Route("api/cities")]
     public class PointsOfInterestController : Controller
     {
+        private const string GetPointOfInterestRouteName = "GetPointOfInterest";
+
         [HttpGet("{cityId}/pointsOfInterest")]
         public IActionResult GetPointsOfInterest(int cityId)
         {
@@ -21,7 +24,7 @@ namespace CityInfo.API.Controllers
             return this.Ok(city.PointsOfInterest);
         }
 
-        [HttpGet("{cityId}/pointsOfInterest/{pointOfInterestId}")]
+        [HttpGet("{cityId}/pointsOfInterest/{pointOfInterestId}", Name = GetPointOfInterestRouteName)]
         public IActionResult GetPointOfInterest(int cityId, int pointOfInterestId)
         {
             var city = CitiesDataStore.Current.Cities.SingleOrDefault(c => c.Id == cityId);
@@ -37,6 +40,26 @@ namespace CityInfo.API.Controllers
             }
 
             return this.Ok(poi);
+        }
+
+        [HttpPost("{cityId}/pointsOfInterest")]
+        public IActionResult CreatePointOfInterest(int cityId, [FromBody] PointOfInterestForCreationDTO pointOfInterest)
+        {
+            if (pointOfInterest == null)
+            {
+                return this.BadRequest();
+            }
+
+            var city = CitiesDataStore.Current.Cities.SingleOrDefault(c => c.Id == cityId);
+            if(city == null)
+            {
+                return this.NotFound($"City does not exist for cityId={cityId}");
+            }
+
+            int nextPoiId = CitiesDataStore.Current.Cities.SelectMany(c => c.PointsOfInterest).Max(poi => poi.Id) + 1;
+            var newPoi = new PointOfInterestDTO { Id = nextPoiId, Name = pointOfInterest.Name, Description = pointOfInterest.Description };
+            city.PointsOfInterest.Add(newPoi);
+            return this.CreatedAtRoute(GetPointOfInterestRouteName, new { cityId, pointOfInterestId = nextPoiId }, newPoi);
         }
     }
 }
