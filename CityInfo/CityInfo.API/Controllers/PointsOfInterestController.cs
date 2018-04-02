@@ -1,4 +1,5 @@
 ﻿using CityInfo.API.Models;
+using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
@@ -109,6 +110,55 @@ namespace CityInfo.API.Controllers
 
             poi.Name = pointOfInterest.Name;
             poi.Description = pointOfInterest.Description;
+
+            return this.NoContent();
+        }
+
+        [HttpPatch("{cityId}/pointsOfInterest/{pointOfInterestId}")]
+        public IActionResult PartiallyUpdatePointOfInterest(int cityId, int pointOfInterestId, [FromBody] JsonPatchDocument<PointOfInterestForUpdateDTO> patchDocument)
+        {
+            if (patchDocument == null)
+            {
+                return this.BadRequest();
+            }
+
+            var city = CitiesDataStore.Current.Cities.SingleOrDefault(c => c.Id == cityId);
+            if (city == null)
+            {
+                return this.NotFound($"City does not exist for cityId={cityId}");
+            }
+
+            var poi = city.PointsOfInterest.SingleOrDefault(p => p.Id == pointOfInterestId);
+            if (poi == null)
+            {
+                return this.NotFound($"Points of interest does not exist for pointOfInterestId={pointOfInterestId}");
+            }
+
+            var poiToPatch = new PointOfInterestForUpdateDTO
+            {
+                Name = poi.Name,
+                Description = poi.Description
+            };
+
+            patchDocument.ApplyTo(poiToPatch, this.ModelState);
+            if (!this.ModelState.IsValid)
+            {
+                return this.BadRequest(this.ModelState);
+            }
+
+            if (poiToPatch.Name.Equals(poiToPatch.Description, StringComparison.InvariantCultureIgnoreCase))
+            {
+                this.ModelState.AddModelError(nameof(poiToPatch.Description), "Provided description should be different from name.");
+            }
+
+            this.TryValidateModel(poiToPatch);
+            if (!this.ModelState.IsValid)
+            {
+                return this.BadRequest(this.ModelState);
+            }
+
+            poi.Name = poiToPatch.Name;
+            poi.Description = poiToPatch.Description;
 
             return this.NoContent();
         }
