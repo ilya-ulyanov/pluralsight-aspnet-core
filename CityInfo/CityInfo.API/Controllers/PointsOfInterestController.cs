@@ -47,7 +47,17 @@ namespace CityInfo.API.Controllers
         {
             if (pointOfInterest == null)
             {
-                return this.BadRequest();
+                return this.BadRequest(this.ModelState);
+            }
+
+            if (pointOfInterest.Name.Equals(pointOfInterest.Description, StringComparison.InvariantCultureIgnoreCase))
+            {
+                this.ModelState.AddModelError(nameof(pointOfInterest.Description), "Provided description should be different from name.");
+            }
+
+            if (!this.ModelState.IsValid)
+            {
+                return this.BadRequest(this.ModelState);
             }
 
             var city = CitiesDataStore.Current.Cities.SingleOrDefault(c => c.Id == cityId);
