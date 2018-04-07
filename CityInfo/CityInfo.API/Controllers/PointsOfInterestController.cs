@@ -1,24 +1,32 @@
 ﻿using CityInfo.API.Models;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace CityInfo.API.Controllers
 {
     [Route("api/cities")]
     public class PointsOfInterestController : Controller
     {
+        private readonly ILogger<PointsOfInterestController> logger;
+
+        public PointsOfInterestController(ILogger<PointsOfInterestController> logger)
+        {
+            this.logger = logger;
+        }
+
         private const string GetPointOfInterestRouteName = "GetPointOfInterest";
 
         [HttpGet("{cityId}/pointsOfInterest")]
         public IActionResult GetPointsOfInterest(int cityId)
         {
+            this.logger.LogInformation($"Got request for city Id= {cityId}");
             var city = CitiesDataStore.Current.Cities.SingleOrDefault(c => c.Id == cityId);
             if (city == null)
             {
+                this.logger.LogWarning($"City Id={cityId} cannot be found");
                 return this.NotFound();
             }
 
