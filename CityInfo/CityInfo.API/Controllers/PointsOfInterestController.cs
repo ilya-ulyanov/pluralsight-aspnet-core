@@ -128,7 +128,6 @@ namespace CityInfo.API.Controllers
             }
 
             Mapper.Map(pointOfInterest, poi);
-
             if (!this.cityInfoRepository.Save())
             {
                 return this.StatusCode(500, "A problem happened");
@@ -145,23 +144,18 @@ namespace CityInfo.API.Controllers
                 return this.BadRequest();
             }
 
-            var city = CitiesDataStore.Current.Cities.SingleOrDefault(c => c.Id == cityId);
-            if (city == null)
+            if (!this.cityInfoRepository.CityExists(cityId))
             {
                 return this.NotFound($"City does not exist for cityId={cityId}");
             }
 
-            var poi = city.PointsOfInterest.SingleOrDefault(p => p.Id == pointOfInterestId);
+            var poi = this.cityInfoRepository.GetPointOfInterest(cityId, pointOfInterestId);
             if (poi == null)
             {
                 return this.NotFound($"Points of interest does not exist for pointOfInterestId={pointOfInterestId}");
             }
 
-            var poiToPatch = new PointOfInterestForUpdateDTO
-            {
-                Name = poi.Name,
-                Description = poi.Description
-            };
+            var poiToPatch = Mapper.Map<PointOfInterestForUpdateDTO>(poi);
 
             patchDocument.ApplyTo(poiToPatch, this.ModelState);
             if (!this.ModelState.IsValid)
@@ -180,8 +174,11 @@ namespace CityInfo.API.Controllers
                 return this.BadRequest(this.ModelState);
             }
 
-            poi.Name = poiToPatch.Name;
-            poi.Description = poiToPatch.Description;
+            Mapper.Map(poiToPatch, poi);
+            if (!this.cityInfoRepository.Save())
+            {
+                return this.StatusCode(500, "A problem happened");
+            }
 
             return this.NoContent();
         }
