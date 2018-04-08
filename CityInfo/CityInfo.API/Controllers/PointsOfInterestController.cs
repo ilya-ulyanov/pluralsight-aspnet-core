@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using CityInfo.API.Entities;
 using CityInfo.API.Models;
 using CityInfo.API.Services;
 using Microsoft.AspNetCore.JsonPatch;
@@ -76,16 +77,20 @@ namespace CityInfo.API.Controllers
                 return this.BadRequest(this.ModelState);
             }
 
-            var city = CitiesDataStore.Current.Cities.SingleOrDefault(c => c.Id == cityId);
-            if(city == null)
+            if(!this.cityInfoRepository.CityExists(cityId))
             {
                 return this.NotFound($"City does not exist for cityId={cityId}");
             }
 
-            int nextPoiId = CitiesDataStore.Current.Cities.SelectMany(c => c.PointsOfInterest).Max(poi => poi.Id) + 1;
-            var newPoi = new PointOfInterestDTO { Id = nextPoiId, Name = pointOfInterest.Name, Description = pointOfInterest.Description };
-            city.PointsOfInterest.Add(newPoi);
-            return this.CreatedAtRoute(GetPointOfInterestRouteName, new { cityId, pointOfInterestId = nextPoiId }, newPoi);
+            var newPoi = Mapper.Map<PointOfInterest>(pointOfInterest);
+            this.cityInfoRepository.AddPointOfInterestForCity(cityId, newPoi);
+            if (!this.cityInfoRepository.Save())
+            {
+                return this.StatusCode(500, "A problem happened");
+            }
+
+            var result = Mapper.Map<PointOfInterestDTO>(newPoi);
+            return this.CreatedAtRoute(GetPointOfInterestRouteName, new { cityId, pointOfInterestId = newPoi.Id }, result);
         }
 
         [HttpPut("{cityId}/pointsOfInterest/{pointOfInterestId}")]
