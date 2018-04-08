@@ -1,9 +1,11 @@
-﻿using CityInfo.API.Models;
+﻿using AutoMapper;
+using CityInfo.API.Models;
 using CityInfo.API.Services;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace CityInfo.API.Controllers
@@ -35,8 +37,7 @@ namespace CityInfo.API.Controllers
             }
 
             var pois = this.cityInfoRepository.GetPointsOfInterest(cityId);
-            var result = pois.Select(poi => new PointOfInterestDTO { Id = poi.Id, Name = poi.Name, Description = poi.Description });
-            return this.Ok(result);
+            return this.Ok(Mapper.Map<IEnumerable<PointOfInterestDTO>>(pois));
         }
 
         [HttpGet("{cityId}/pointsOfInterest/{pointOfInterestId}", Name = GetPointOfInterestRouteName)]
@@ -54,7 +55,7 @@ namespace CityInfo.API.Controllers
                 return this.NotFound();
             }
 
-            return this.Ok(new PointOfInterestDTO { Id = poi.Id, Name = poi.Name, Description = poi.Description });
+            return this.Ok(Mapper.Map<PointOfInterestDTO>(poi));
         }
 
         [HttpPost("{cityId}/pointsOfInterest")]
