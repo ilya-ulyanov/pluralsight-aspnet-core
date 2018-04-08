@@ -13,11 +13,13 @@ namespace CityInfo.API.Controllers
     {
         private readonly ILogger<PointsOfInterestController> logger;
         private readonly IMailService mailService;
+        private readonly ICityInfoRepository cityInfoRepository;
 
-        public PointsOfInterestController(ILogger<PointsOfInterestController> logger, IMailService mailService)
+        public PointsOfInterestController(ILogger<PointsOfInterestController> logger, IMailService mailService, ICityInfoRepository cityInfoRepository)
         {
             this.logger = logger;
             this.mailService = mailService;
+            this.cityInfoRepository = cityInfoRepository;
         }
 
         private const string GetPointOfInterestRouteName = "GetPointOfInterest";
@@ -26,32 +28,33 @@ namespace CityInfo.API.Controllers
         public IActionResult GetPointsOfInterest(int cityId)
         {
             this.logger.LogInformation($"Got request for city Id= {cityId}");
-            var city = CitiesDataStore.Current.Cities.SingleOrDefault(c => c.Id == cityId);
-            if (city == null)
+            if (!this.cityInfoRepository.CityExists(cityId))
             {
                 this.logger.LogWarning($"City Id={cityId} cannot be found");
                 return this.NotFound();
             }
 
-            return this.Ok(city.PointsOfInterest);
+            var pois = this.cityInfoRepository.GetPointsOfInterest(cityId);
+            var result = pois.Select(poi => new PointOfInterestDTO { Id = poi.Id, Name = poi.Name, Description = poi.Description });
+            return this.Ok(result);
         }
 
         [HttpGet("{cityId}/pointsOfInterest/{pointOfInterestId}", Name = GetPointOfInterestRouteName)]
         public IActionResult GetPointOfInterest(int cityId, int pointOfInterestId)
         {
-            var city = CitiesDataStore.Current.Cities.SingleOrDefault(c => c.Id == cityId);
-            if (city == null)
+            if (!this.cityInfoRepository.CityExists(cityId))
             {
+                this.logger.LogWarning($"City Id={cityId} cannot be found");
                 return this.NotFound();
             }
 
-            var poi = city.PointsOfInterest.SingleOrDefault(p => p.Id == pointOfInterestId);
+            var poi = this.cityInfoRepository.GetPointsOfInterest(cityId).SingleOrDefault(p => p.Id == pointOfInterestId);
             if (poi == null)
             {
                 return this.NotFound();
             }
 
-            return this.Ok(poi);
+            return this.Ok(new PointOfInterestDTO { Id = poi.Id, Name = poi.Name, Description = poi.Description });
         }
 
         [HttpPost("{cityId}/pointsOfInterest")]

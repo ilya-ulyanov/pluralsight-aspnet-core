@@ -14,6 +14,11 @@ namespace CityInfo.API.Services
             this.cityInfoContext = cityInfoContext;
         }
 
+        public bool CityExists(int cityId)
+        {
+            return this.cityInfoContext.Cities.Any(c => c.Id == cityId);
+        }
+
         public IEnumerable<City> GetCities()
         {
             return this.cityInfoContext.Cities.ToList();
@@ -24,7 +29,7 @@ namespace CityInfo.API.Services
             IQueryable<City> query = this.cityInfoContext.Cities;
             if (includePointsOfInterest)
             {
-                query.Include(c => c.PointsOfInterest);
+                query = query.Include(c => c.PointsOfInterest);
             }
 
             return query.SingleOrDefault(c => c.Id == cityId);
